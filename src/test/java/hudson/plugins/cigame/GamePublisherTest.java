@@ -16,6 +16,7 @@ import hudson.plugins.cigame.model.Rule;
 import hudson.plugins.cigame.model.RuleBook;
 import hudson.plugins.cigame.model.RuleResult;
 import hudson.plugins.cigame.model.RuleSet;
+import hudson.plugins.cigame.PublishEnvVarAction;
 import hudson.scm.ChangeLogSet;
 import hudson.scm.ChangeLogSet.Entry;
 
@@ -34,8 +35,9 @@ public class GamePublisherTest {
 
         assertThat(new GamePublisher().perform(build, new RuleBook(), true, null), is(false));
         
-        verify(build).getActions();
+        verify(build, times(3)).getActions();
         verify(actions).add(Mockito.isA(ScoreCardAction.class));
+        verify(actions, times(2)).add(Mockito.isA(PublishEnvVarAction.class));
         verify(build).getChangeSet();
         verify(build).getPreviousBuild();
         verify(build).getCauses();

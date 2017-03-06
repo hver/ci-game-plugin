@@ -6,6 +6,7 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Set;
 import java.util.TreeSet;
+import java.util.Arrays;
 
 import hudson.Launcher;
 import hudson.model.AbstractBuild;
@@ -100,8 +101,8 @@ public class GamePublisher extends Notifier {
 	        	}
         	}
         }
-        
-        return updateUserScores(players, sc.getTotalPoints(), accountableBuilds);
+
+        return updateUserScores(players, sc.getTotalPoints(), accountableBuilds, build);
     }
     private AbstractBuild getBuildByUpstreamCause(List<Cause> causes,BuildListener listener ){
         for(Cause cause: (List<Cause>) causes){
@@ -133,7 +134,10 @@ public class GamePublisher extends Notifier {
      * @throws IOException thrown if the property could not be added to the user object.
      * @return true, if any user scores was updated; false, otherwise
      */
-    private boolean updateUserScores(Set<User> players, double score, List<AbstractBuild<?, ?>> accountableBuilds) throws IOException {
+    private boolean updateUserScores(Set<User> players, double score, List<AbstractBuild<?, ?>> accountableBuilds, AbstractBuild<?, ?> build) throws IOException {
+
+        List<String> userNames = new ArrayList<String>();
+
         if (score != 0) {
             for (User user : players) {
                 UserScoreProperty property = user.getProperty(UserScoreProperty.class);
@@ -144,10 +148,18 @@ public class GamePublisher extends Notifier {
                 if (property.isParticipatingInGame()) {
                     property.setScore(property.getScore() + score);
                     property.rememberAccountableBuilds(accountableBuilds, score);
+                    String username = user.getFullName();
+                    if(username != null && !username.isEmpty()){
+                        userNames.add("@" + username.replace(" ", ""));
+                    }
                 }
                 user.save();
             }
         }
+
+        build.getActions().add(new PublishEnvVarAction("GAME_SCORE", String.valueOf(score)));
+        build.getActions().add(new PublishEnvVarAction("GAME_PLAYERS", Arrays.toString(userNames.toArray())));
+
         return (!players.isEmpty());
     }
 
